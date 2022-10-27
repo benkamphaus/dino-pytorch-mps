@@ -29,14 +29,9 @@ import torch.nn.functional as F
 from torchvision import datasets, transforms
 from torchvision import models as torchvision_models
 
-# import utils
 import utils
 import vision_transformer as vits
 from vision_transformer import DINOHead
-
-
-global_student = None
-global_teacher = None
 
 
 mps = torch.device('mps')
@@ -240,10 +235,8 @@ def train_dino(args):
         optimizer = torch.optim.SGD(params_groups, lr=0, momentum=0.9)  # lr is set by scheduler
     elif args.optimizer == "lars":
         optimizer = utils.LARS(params_groups)  # to use with convnet and large batches
-    # for mixed precision training
+    # -- mixed precision training not supported on mps --
     fp16_scaler = None
-    # if args.use_fp16:
-    #    fp16_scaler = torch.cuda.amp.GradScaler()
 
     # ============ init schedulers ... ============
     lr_schedule = utils.cosine_scheduler(
@@ -321,10 +314,10 @@ def train_one_epoch(student, teacher, teacher_without_ddp, dino_loss, data_loade
             if i == 0:  # only the first group is regularized
                 param_group["weight_decay"] = wd_schedule[it]
 
-        # move images to gpu
+        # move images to {mps}
         images = [im.to(mps, non_blocking=True) for im in images]
+
         # teacher and student forward passes + compute dino loss
-        # with torch.cuda.amp.autocast(fp16_scaler is not None):
         teacher_output = teacher(images[:2])  # only the 2 global views pass through the teacher
         student_output = student(images)
         loss = dino_loss(student_output, teacher_output, epoch)
@@ -360,7 +353,6 @@ def train_one_epoch(student, teacher, teacher_without_ddp, dino_loss, data_loade
                 param_k.data.mul_(m).add_((1 - m) * param_q.detach().data)
 
         # logging
-        # torch.cuda.synchronize()
         metric_logger.update(loss=loss.item())
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
         metric_logger.update(wd=optimizer.param_groups[0]["weight_decay"])
