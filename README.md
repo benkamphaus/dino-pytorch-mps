@@ -1,6 +1,7 @@
 # PyTorch MPS DINO implementation
 
-Port of Facebook Research's DINO code to use the MPS backend in PyTorch rather than distributed NVidia code.
+Port of Facebook Research's [DINO](https://ai.facebook.com/blog/dino-paws-computer-vision-with-self-supervised-transformers-and-10x-more-efficient-training/)
+[code](https://github.com/facebookresearch/dino) to use the MPS backend in PyTorch rather than distributed NVidia code.
 
 This currently works on the latest nightly builds of PyTorch when MPS fallback is enabled. It was most recently tested with `1.14.0.dev20221025`.
 
